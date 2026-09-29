@@ -216,14 +216,17 @@ const okAns=(v,list)=>{const x=norm(v);if(!x)return false;
 // at the end of Level 2, because those drive Level 3's gift review
 // and Level 4's recommendations.
 function lessonDone(n){
-  if(n===2) return S.gifts.length===3;
+  if(n===2) return TEST||S.gifts.length===3;
   return true;
 }
 // ---- Schedule: Level N meets on the Nth Sabbath (Saturday) of every month, 9:00 AM. A 5th Sabbath is off. ----
 const MON=['January','February','March','April','May','June','July','August','September','October','November','December'];
 const DAY=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const PLACE='The Journey Room';
-const PREVIEW=/[?&]preview\b/.test(location.search);   // staff testing: every level opens any day
+// TEST SITE — on journey-test-church.github.io (or any copy opened with ?test) everything is open:
+// every level unlocked, no codes, no required fields or gifts, and nothing is ever sent.
+const TEST=location.hostname==='journey-test-church.github.io'||/[?&]test\b/.test(location.search);
+const PREVIEW=TEST||/[?&]preview\b/.test(location.search);   // staff testing: every level opens any day
 const ymd=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 const today=()=>{const d=new Date();d.setHours(0,0,0,0);return d;};
 const parseYmd=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);};
@@ -250,7 +253,7 @@ function saveProg(){try{localStorage.setItem('journey.progress',JSON.stringify({
 
 const prereq=n=>n===1||(S.att[n-1]&&lessonDone(n-1));
 const openToday=n=>PREVIEW||satIndex(today())===n||S.makeup[n]===ymd(today());
-function unlocked(n){return S.att[n]||(prereq(n)&&openToday(n));}
+function unlocked(n){return TEST||S.att[n]||(prereq(n)&&openToday(n));}
 function whyLocked(n){
   if(!prereq(n)) return n===3?'Complete Level 2 and record your three spiritual gifts first.':'Complete Level '+(n-1)+' first.';
   return 'Opens '+fmtDay(nextSession(n))+' at 9:00 AM. Doing a make-up session? Tap the card to enter the code.'; }
@@ -642,7 +645,7 @@ function missing(n){const bl=lv(n).blocks,out=[];
   if(fb)fb.q.forEach((q,i)=>{if(!(S.fb[n][i]||'').trim())out.push('[data-fq="'+n+':'+i+'"]');});
   if(bl.some(b=>b.t==='aboutyou'))AB_REQ.forEach(k=>{if(!(S.about[k]||'').trim())out.push('[data-ab="'+k+'"]');});
   return out;}
-const ready=n=>lessonDone(n)&&!missing(n).length;
+const ready=n=>TEST||(lessonDone(n)&&!missing(n).length);
 function saveMe(){try{localStorage.setItem('journey.me',JSON.stringify(S.me));}catch(e){}}
 function start(n){if(!S.me)return welcome(n);
   // Walk-in (or a different month than planned) on a first Sabbath: sign them up for today.
@@ -741,8 +744,9 @@ function welcome(n){
       let msg=x?'':'Required';
       if(x&&k==='email'&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(x))msg='Enter a valid email address';
       if(x&&k==='phone'&&x.replace(/\D/g,'').length<10)msg='Enter a 10-digit phone number';
-      f.classList.toggle('bad',!!msg);if(msg){er.textContent=msg;if(!first)first=i;}});
+      if(TEST)msg='';f.classList.toggle('bad',!!msg);if(msg){er.textContent=msg;if(!first)first=i;}});
     if(first){first.focus();return;}
+    if(TEST&&!v.first)v.first='Test';
     S.me=v;saveMe();n?start(n):signup();};
   document.getElementById('wgo').onclick=go;
   ins.forEach(i=>i.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();go();}}));
@@ -752,7 +756,7 @@ function welcome(n){
 // ---- Send each finished level to Planning Center (via the journey-submit function) ----
 // Only ARISE Miami's own site sends to ARISE's Planning Center. A copy (fork) hosted anywhere
 // else sends nothing until its church points this at its own server.
-const SUBMIT_URL=location.hostname==='kendallturcios-sketch.github.io'?'https://eyplibippxytrlrrmafy.supabase.co/functions/v1/journey-submit':'';
+const SUBMIT_URL=!TEST&&location.hostname==='kendallturcios-sketch.github.io'?'https://eyplibippxytrlrrmafy.supabase.co/functions/v1/journey-submit':'';
 function levelAnswers(n){const a={fb:S.fb[n]||[]};
   if(n===1){a.about=S.about;a.baptism=S.baptism;}
   if(n===2)a.lgHelp=S.lgHelp;
@@ -780,6 +784,7 @@ window.addEventListener('online',flush);
 setTimeout(flush,1500);
 
 function code(n){
+  if(TEST){S.att[n]=true;saveProg();done(n);return;}   // test site: no code screen
   S.view='code';bs.textContent='';
   sc.innerHTML=`<div class="fin"><h2>One More Step</h2><div class="rule"></div>
    <p>Your work is saved. Enter the four-digit code on the screen at the front to record your attendance and complete Level ${n}.</p>
@@ -815,7 +820,7 @@ function done(n){
   sc.scrollTop=0;
 }
 back.onclick=()=>['lesson','welcome','signup','makeup'].includes(S.view)?home():lesson(S.cur);
-try{const m=JSON.parse(localStorage.getItem('journey.me')||'null');if(m&&m.email)S.me=m;}catch(e){}
+try{const m=JSON.parse(localStorage.getItem('journey.me')||'null');if(m&&(m.email||TEST))S.me=m;}catch(e){}
 loadProg();
 home();
 </script></body></html>
