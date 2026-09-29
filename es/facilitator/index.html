@@ -97,6 +97,9 @@ function dcode(kind,n,d){let h=2166136261;
   for(const c of 'journey|'+kind+'|'+n+'|'+ymd(d||new Date())){h^=c.charCodeAt(0);h=Math.imul(h,16777619)>>>0;}
   return String(h%9000+1000);}
 let cur=[1,2,3,4].includes(satIndex(new Date()))?satIndex(new Date()):1;   // opens on today's level on a Sabbath
+// SITIO DE PRUEBA — en journey-test-church.github.io (o con ?test) la app de participantes no pide códigos
+// ni nada obligatorio, así que aquí se ocultan los códigos y un aviso lo explica.
+const TEST=location.hostname==='journey-test-church.github.io'||/[?&]test\b/.test(location.search);
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
 const KIND={say:'Di',ask:'Pregunta',do:'Haz'};
 
@@ -166,9 +169,10 @@ function block(b){
 
 function draw(){
   const l=L[cur-1];
-  document.getElementById('catt').textContent=dcode('att',l.n);
-  document.getElementById('cmk').textContent=dcode('makeup',l.n);
-  document.getElementById('ckl').textContent='Código · Nivel '+l.n;
+  if(!TEST){
+    document.getElementById('catt').textContent=dcode('att',l.n);
+    document.getElementById('cmk').textContent=dcode('makeup',l.n);
+    document.getElementById('ckl').textContent='Código · Nivel '+l.n;}
   document.getElementById('ttl').textContent='Nivel '+l.n+' — '+l.title;
   const nb=l.blocks.filter(b=>b.t==='f').reduce((a,b)=>a+b.a.length,0);
   document.getElementById('body').innerHTML=`
@@ -176,10 +180,13 @@ function draw(){
     <h2>${esc(l.title)}</h2><p>${esc(l.sub)}</p>
     <div class="meta"><span>inicio <b>9:00 AM</b></span><span><b>90</b> minutos</span>
     ${nb?`<span><b>${nb}</b> espacios</span>`:''}
-    <span>Código de la sesión <b>${dcode('att',l.n)}</b>${satIndex(new Date())===l.n?' (hoy)':' (solo funciona el '+esc(l.sab.toLowerCase())+')'}</span>
-    <span>Código de reposición <b>${dcode('makeup',l.n)}</b> (hoy, a cualquier hora)</span></div></div>
+    ${TEST?'':`    <span>Código de la sesión <b>${dcode('att',l.n)}</b>${satIndex(new Date())===l.n?' (hoy)':' (solo funciona el '+esc(l.sab.toLowerCase())+')'}</span>
+    <span>Código de reposición <b>${dcode('makeup',l.n)}</b> (hoy, a cualquier hora)</span>`}</div></div>
+   ${TEST?`<div class="box" style="border-color:#F0D9A8;background:#FFF8EA"><p><b>Sitio de prueba.</b> Todos los niveles están abiertos en la app de participantes: sin códigos, sin bloqueos, se puede saltar cualquier espacio o pregunta, y no se envía nada a Planning Center. Las notas que dicen que algo es &ldquo;obligatorio&rdquo; o que está &ldquo;bloqueado&rdquo; describen la app real.</p></div>`:''}
    ${l.blocks.map(block).join('')}`;
   tabs();
 }
+if(TEST){const cb=document.querySelectorAll('.codebox');cb[1].style.display='none';
+  cb[0].innerHTML='<small>Sitio de prueba</small><b style="font-size:17px;letter-spacing:.04em">Sin códigos</b>';}
 draw();
 </script></body></html>

@@ -97,6 +97,9 @@ function dcode(kind,n,d){let h=2166136261;
   for(const c of 'journey|'+kind+'|'+n+'|'+ymd(d||new Date())){h^=c.charCodeAt(0);h=Math.imul(h,16777619)>>>0;}
   return String(h%9000+1000);}
 let cur=[1,2,3,4].includes(satIndex(new Date()))?satIndex(new Date()):1;   // opens on today's level on a Sabbath
+// TEST SITE — on journey-test-church.github.io (or with ?test) the participant app needs no codes and
+// requires nothing, so the codes are hidden here and a banner says so.
+const TEST=location.hostname==='journey-test-church.github.io'||/[?&]test\b/.test(location.search);
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
 const KIND={say:'Say',ask:'Ask',do:'Do'};
 
@@ -166,9 +169,10 @@ function block(b){
 
 function draw(){
   const l=L[cur-1];
-  document.getElementById('catt').textContent=dcode('att',l.n);
-  document.getElementById('cmk').textContent=dcode('makeup',l.n);
-  document.getElementById('ckl').textContent='Level '+l.n+' session code';
+  if(!TEST){
+    document.getElementById('catt').textContent=dcode('att',l.n);
+    document.getElementById('cmk').textContent=dcode('makeup',l.n);
+    document.getElementById('ckl').textContent='Level '+l.n+' session code';}
   document.getElementById('ttl').textContent='Level '+l.n+' — '+l.title;
   const nb=l.blocks.filter(b=>b.t==='f').reduce((a,b)=>a+b.a.length,0);
   document.getElementById('body').innerHTML=`
@@ -176,10 +180,13 @@ function draw(){
     <h2>${esc(l.title)}</h2><p>${esc(l.sub)}</p>
     <div class="meta"><span><b>9:00 AM</b> start</span><span><b>90</b> minutes</span>
     ${nb?`<span><b>${nb}</b> blanks</span>`:''}
-    <span>Session code <b>${dcode('att',l.n)}</b>${satIndex(new Date())===l.n?' (today)':' (works only on the '+esc(l.sab)+')'}</span>
-    <span>Make-up code <b>${dcode('makeup',l.n)}</b> (today, any time)</span></div></div>
+    ${TEST?'':`    <span>Session code <b>${dcode('att',l.n)}</b>${satIndex(new Date())===l.n?' (today)':' (works only on the '+esc(l.sab)+')'}</span>
+    <span>Make-up code <b>${dcode('makeup',l.n)}</b> (today, any time)</span>`}</div></div>
+   ${TEST?`<div class="box" style="border-color:#F0D9A8;background:#FFF8EA"><p><b>Test site.</b> Every level is open in the participant app: no codes, no locks, every blank and question can be skipped, and nothing is sent to Planning Center. Notes below that say something is &ldquo;required&rdquo; or &ldquo;locked&rdquo; describe the real app.</p></div>`:''}
    ${l.blocks.map(block).join('')}`;
   tabs();
 }
+if(TEST){const cb=document.querySelectorAll('.codebox');cb[1].style.display='none';
+  cb[0].innerHTML='<small>Test site</small><b style="font-size:17px;letter-spacing:.04em">No codes</b>';}
 draw();
 </script></body></html>
